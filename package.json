@@ -14,7 +14,8 @@
   "dependencies": {
     "@openzeppelin/contracts": "^4.5.0",
     "dotenv": "^16.0.0",
-    "erc-3475": "git+https://github.com/DeBond-Protocol/EIP-3475.git#main"
+    "erc-3475": "git+https://github.com/DeBond-Protocol/EIP-3475.git#main",
+    "debond-governance": "https://github.com/Debond-Protocol/Debond-Governance/tree/main/contracts"
   },
   "devDependencies": {
     "@typechain/truffle-v5": "^5.1.0",

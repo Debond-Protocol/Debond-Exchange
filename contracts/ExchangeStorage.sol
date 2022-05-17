@@ -27,13 +27,13 @@ contract ExchangeStorage is IExchangeStorage  {
         minAuctionDuration = 3600;
     }
 
-    modifier onlyGovernance() {
-        require(msg.sender == governanceAddress, "Exchange Storage: not allowed");
+    modifier onlyExchange() {
+        require(msg.sender == exchangeAddress, "Exchange Storage: not allowed");
         _;
     }
 
-    modifier onlyExchange() {
-        require(msg.sender == exchangeAddress, "Exchange Storage: not allowed");
+    modifier onlyGovernance() {
+        require(msg.sender == governanceAddress, "Exchange Storage: not allowed");
         _;
     }
 

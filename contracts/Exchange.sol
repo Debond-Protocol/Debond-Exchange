@@ -9,8 +9,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
+import "debond-governance/contracts/utils/GovernanceOwnable.sol";
 
-contract Exchange is AccessControl, ReentrancyGuard {
+contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
 
     using SafeERC20 for IERC20;
 
@@ -24,12 +25,9 @@ contract Exchange is AccessControl, ReentrancyGuard {
     event AuctionCompleted(uint256 _auctionId, address BidWinner);
     event BidSubmitted(address indexed sender, uint256 amount);
 
-    constructor(
-        address _exchangeStorageAddress
-    )  {
+    constructor(address _exchangeStorageAddress, address _governanceAddress) GovernanceOwnable(_governanceAddress) {
         exchangeStorageAddress = _exchangeStorageAddress;
         exchangeStorage = IExchangeStorage(_exchangeStorageAddress);
-        //   curvingPriceParam = 10;
 
     }
 

@@ -10,7 +10,7 @@ module.exports = async function (deployer, network, accounts) {
   await deployer.deploy(ExchangeStorage, accounts[0]);
   const exchangeStorageInstance = await ExchangeStorage.deployed();
 
-  await deployer.deploy(Exchange, exchangeStorageInstance.address);
+  await deployer.deploy(Exchange, exchangeStorageInstance.address, accounts[0]);
   const exchangeInstance = await Exchange.deployed();
   await exchangeStorageInstance.setExchangeAddress(exchangeInstance.address);
 
