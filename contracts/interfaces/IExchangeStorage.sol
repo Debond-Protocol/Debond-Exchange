@@ -58,6 +58,18 @@ interface IExchangeStorage {
 
     function setMinAuctionDuration(uint minAuctionDuration) external;
 
+    /**
+    defines the function to create an dutch auction.
+    @param owner address of the owner.
+    @param startingTime is the time for listing of given bond for auction.
+    @param duration is the max time interval for auction   (before an bid).
+    @param erc20Currency the underlying ERC20 token for underlying denomination  of the bond 
+    @param maxCurrencyAmount is the  starting price of the bond 
+    @param minCurrencyAmount is the min amount achieved on the pricing curve if there is not bid till (startingTime + Duration).
+    @param curvingPrice defines  the nature of the price based on the type of bond (fixed or floating rate). 
+     */
+
+
     function createAuction(
         address owner,
         uint256 startingTime,
@@ -67,8 +79,9 @@ interface IExchangeStorage {
         uint256 minCurrencyAmount,
         bool curvingPrice
     ) external;
+    
 
-    function addProduct(uint auctionId, uint productId, ERC3475Product memory product) external;
+    function addProduct(uint auctionId, uint productId, ERC3475Product calldata product) external;
 
     function completeAuction(uint auctionId, address successfulBidder, uint endingTime, uint finalPrice) external;
 
