@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IERC3475.sol";
+import "erc-3475/contracts/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
 import "debond-governance/contracts/utils/GovernanceOwnable.sol";
 
@@ -78,7 +78,6 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
                 nonceIds[i],
                 amounts[i]
             );
-
             IExchangeStorage.ERC3475Product memory product;
             product.ERC3475Address = erc3475Addresses[i];
             product.classId = classIds[i];
@@ -132,12 +131,11 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         );
         if (!auction.curvingPrice) {
             // for fixed rate , there will be using the straight line fixed price decreasing mechanism.
-            auctionPrice = auction.maxCurrencyAmount - (auction.maxCurrencyAmount - auction.minCurrencyAmount) * time_passed / auction.duration;
-
+            auctionPrice  = auction.minCurrencyAmount + ((auction.maxCurrencyAmount  - auction.minCurrencyAmount) * time_passed / auction.duration);
         }
         // else  if  its the floating rate, there will be decreasing parabolic curve as function of 
         else {
-            auctionPrice = auction.maxCurrencyAmount - ((auction.maxCurrencyAmount - auction.minCurrencyAmount)/(auction.duration**2)) * ((block.timestamp - auction.startingTime)**2);
+            auctionPrice = auction.maxCurrencyAmount + ((auction.maxCurrencyAmount - auction.minCurrencyAmount)/(auction.duration**2)) * ((block.timestamp - auction.startingTime)**2);
         }
     }
 

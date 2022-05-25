@@ -1,4 +1,4 @@
-import {before} from "mocha";
+import { before } from "mocha";
 import {
     ERC20CurrencyInstance,
     ERC3475TestInstance,
@@ -12,6 +12,9 @@ const ERC20Currency = artifacts.require("ERC20Currency");
 
 
 contract('Exchange', async (accounts: string[]) => {
+
+    let delta = 2; // just taking  difference between the prices from the smart contracts and prediction.
+
     const [deployer, seller, bidder] = accounts;
     let exchangeInstance: ExchangeInstance;
     let exchangeStorageInstance: ExchangeStorageInstance;
@@ -30,14 +33,11 @@ contract('Exchange', async (accounts: string[]) => {
         Cancelled
     }
 
-
     it('Initialisation', async () => {
         exchangeInstance = await Exchange.deployed();
         exchangeStorageInstance = await ExchangeStorage.deployed();
         erc3475TestInstance = await ERC3475Test.deployed();
         erc20CurrencyInstance = await ERC20Currency.deployed();
-
-
         // 1.seller needs to get some bonds
         await erc3475TestInstance.issue(seller, 0, 0, initialERC3475Issued)
 
@@ -51,7 +51,7 @@ contract('Exchange', async (accounts: string[]) => {
 
     it('Should create Bond Auction', async () => {
 
-        await erc3475TestInstance.setApprovalFor(exchangeInstance.address, 0, true, {from: seller})
+        await erc3475TestInstance.setApprovalFor(exchangeInstance.address, 0, true, { from: seller })
         await exchangeInstance.createSecondaryMarketAuction(
             seller,
             [erc3475TestInstance.address],
@@ -63,7 +63,7 @@ contract('Exchange', async (accounts: string[]) => {
             web3.utils.toWei('2000', 'ether'),
             3600,
             true,
-            {from: seller}
+            { from: seller }
         )
         console.log("exchange balance erc3475 tokens: " + (await erc3475TestInstance.balanceOf(exchangeStorageInstance.address, 0, 0)).toString());
 
@@ -74,12 +74,11 @@ contract('Exchange', async (accounts: string[]) => {
 
 
         const maxPrice = (await exchangeInstance.getAuction(0)).maxCurrencyAmount.toString()
-        await erc20CurrencyInstance.approve(exchangeInstance.address, maxPrice, {from: bidder});
-        await exchangeInstance.bid(0, {from: bidder});
+        await erc20CurrencyInstance.approve(exchangeInstance.address, maxPrice, { from: bidder });
+        await exchangeInstance.bid(0, { from: bidder });
         const finalPrice = (await exchangeInstance.getAuction(0)).finalPrice
         assert.equal((await erc3475TestInstance.balanceOf(bidder, 0, 0)).toString(), bidAmount)
         assert.equal(web3.utils.toBN(initialERC20Issued).sub(await erc20CurrencyInstance.balanceOf(bidder)).toString(), ((finalPrice)).toString())
-
     });
 
     it('Should cancel the created Auction  from the auction owner before bid', async () => {
@@ -96,10 +95,10 @@ contract('Exchange', async (accounts: string[]) => {
             web3.utils.toWei('200', 'ether'),
             3600,
             false,
-            {from: seller}
+            { from: seller }
         )
 
-        await exchangeInstance.cancelAuction(1, {from: seller});
+        await exchangeInstance.cancelAuction(1, { from: seller });
         let auctionStatus = (await exchangeInstance.getAuction(1)).auctionState;
 
         assert.equal(auctionStatus.toString(), AuctionStatus.Cancelled.toString());
@@ -110,7 +109,7 @@ contract('Exchange', async (accounts: string[]) => {
 
     it('once the bid is successful, it cant be bid again ', async () => {
         try {
-            await exchangeInstance.bid(0, {from: bidder});
+            await exchangeInstance.bid(0, { from: bidder });
         } catch (e: any) {
             assert("bid is completed already", e.reason);
         }
@@ -131,16 +130,19 @@ contract('Exchange', async (accounts: string[]) => {
             web3.utils.toWei('200', 'ether'),
             3600,
             true,
-            {from: seller}
+            { from: seller }
         );
 
 
         try {
-            await exchangeInstance.bid(0, {from: seller});
+            await exchangeInstance.bid(0, { from: seller });
         } catch (e: any) {
             assert("Exchange: bidder should not be the auction owner", e.reason);
         }
 
     })
+
+ 
+
 
 });
