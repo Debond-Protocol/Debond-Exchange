@@ -10,6 +10,7 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "erc-3475/contracts/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
 import "debond-governance/contracts/utils/GovernanceOwnable.sol";
+import "./interfaces/IDebondBond.sol";
 
 contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
 
@@ -17,18 +18,15 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
 
     address exchangeStorageAddress;
     IExchangeStorage exchangeStorage;
-
     // events for the auctions
 
     event AuctionStarted(uint256 _auctionId, address issuer);
     event AuctionCancelled(uint256 _auctionId, address issuer, uint256 time);
     event AuctionCompleted(uint256 _auctionId, address BidWinner);
     event BidSubmitted(address indexed sender, uint256 amount);
-
     constructor(address _exchangeStorageAddress, address _governanceAddress) GovernanceOwnable(_governanceAddress) {
         exchangeStorageAddress = _exchangeStorageAddress;
         exchangeStorage = IExchangeStorage(_exchangeStorageAddress);
-
     }
 
     modifier onlyAuctionOwner(uint256 _auctionId) {
@@ -38,20 +36,16 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         );
         _;
     }
-
     function createSecondaryMarketAuction(
         address creator,
         address[] memory erc3475Addresses,
         uint256[] memory classIds,
         uint256[] memory nonceIds,
-        uint256[] memory amounts,
+        uint256[] memory amounts, 
         address currencyAddress,
-        uint256 minCurrencyAmount,
         uint256 maxCurrencyAmount,
-        uint256 auctionDuration,
-        bool curvingPrice
+        uint256 auctionDuration
     ) external {
-
         // validation steps
         require(
             erc3475Addresses.length == classIds.length &&
@@ -59,15 +53,29 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
             erc3475Addresses.length == amounts.length,
                 "Exchange: inputs not correct"
         );
-        require(auctionDuration < exchangeStorage.getMaxAuctionDuration(), "Exchange: Max Duration Exceeded");
-        require(auctionDuration >= exchangeStorage.getMinAuctionDuration(), "Exchange: Min Duration not reached");
-        require(minCurrencyAmount < maxCurrencyAmount, "Exchange: min Currency Amount Should be less than max currency amount");
-        require(minCurrencyAmount > 0, "Exchange: min Currency Amount Should be greater 0");
+        for(uint i = 0; i < classIds.length; i++) {
+            for (uint j = 0; j < nonceIds.length; j++) {
+                exchangeStorage.setRedemptionBondPrice(creator,classIds[i], nonceIds[j], creator);
+            }
+
+        }
+
+   
+
+        
+       // require(auctionDuration < exchangeStorage.getMaxAuctionDuration(), "Exchange: Max Duration Exceeded");
+       // require(auctionDuration >= exchangeStorage.getMinAuctionDuration(), "Exchange: Min Duration not reached");
+        require(bondCurrentPrice < currentPrice, "Exchange: min Currency Amount Should be less than max currency amount");
+        require(bondCurrentPrice > 0, "Exchange: min Currency Amount Should be greater 0");
         require(exchangeStorageAddress != address(0), "Storage address is null address");
 
         // we are transferring the bonds to the exchange contract
         uint id = exchangeStorage.getAuctionCount();
-        exchangeStorage.createAuction(creator, block.timestamp, auctionDuration, currencyAddress, maxCurrencyAmount, minCurrencyAmount, curvingPrice);
+
+        //minCurrencyAmount will be different for the different bond types based on the particular time of redemption  condition of the bond nonce (for both fixed and floating).
+       
+
+        exchangeStorage.createAuction(creator, block.timestamp, auctionDuration, currencyAddress, maxCurrencyAmount, minCurrencyAmount);
         IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(id);
 
         for(uint i = 0; i < erc3475Addresses.length; i++) {
@@ -121,23 +129,24 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         emit AuctionCancelled(_auctionId, msg.sender, cancellationTime);
     }
 
+    //TODO: @drikssy this will be defining the current redemption prize OF THE GIVEN BOND of the classId and nonceId
     function currentPrice(uint256 _auctionId) public view returns (uint256 auctionPrice) {
 
         IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(_auctionId);
+       
+       // auction.bondCurrentPrice = exchangeStorage.getRedemptionBondPrice(classId, nonceId);
+
         uint256 time_passed = block.timestamp - auction.startingTime;
         require(
             time_passed < auction.duration,
             "auction ended,equal to faceValue"
         );
-        if (!auction.curvingPrice) {
+      
             // for fixed rate , there will be using the straight line fixed price decreasing mechanism.
-            auctionPrice  = auction.minCurrencyAmount + ((auction.maxCurrencyAmount  - auction.minCurrencyAmount) * time_passed / auction.duration);
-        }
-        // else  if  its the floating rate, there will be decreasing parabolic curve as function of 
-        else {
-            auctionPrice = auction.maxCurrencyAmount + ((auction.maxCurrencyAmount - auction.minCurrencyAmount)/(auction.duration**2)) * ((block.timestamp - auction.startingTime)**2);
-        }
-    }
+            auctionPrice  = auction.bondCurrentPrice + ((auction.maxCurrencyAmount  - auction.bondCurrentPrice) * time_passed / auction.duration);
+        
+        // else  if  its the floating rate, which will be implemented by the other market makers as explained in the whitepaper.
+           }
 
     function getAuctionIds() external view returns (uint[] memory) {
         return exchangeStorage.getAuctionIds();

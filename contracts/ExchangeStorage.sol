@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "erc-3475/contracts/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
-
+import "./interfaces/IDebondBond.sol";
 contract ExchangeStorage is IExchangeStorage  {
 
     using Counters for Counters.Counter;
@@ -19,10 +19,15 @@ contract ExchangeStorage is IExchangeStorage  {
     uint maxAuctionDuration;
     uint minAuctionDuration;
 
+    
+
+    // TODO: calculate the current Bond price  to be the bond price on the time during bidding . 
+    mapping(address =>  mapping(uint => mapping (uint => uint))) bondRedemtionPrize ;
     Counters.Counter private idCounter;
 
     constructor(address _governanceAddress)  {
         governanceAddress = _governanceAddress;
+       // here  MaxDuration will be  defined by redemption time of the bond for given nonce nad classId. 
         maxAuctionDuration = 30 days;
         minAuctionDuration = 3600;
     }
@@ -62,7 +67,6 @@ contract ExchangeStorage is IExchangeStorage  {
         address erc20CurrencyAddress,
         uint256 maxCurrencyAmount,
         uint256 minCurrencyAmount,
-        bool curvingPrice
     ) external onlyExchange {
         Auction storage auction = _auctions[idCounter._value];
         AuctionParam storage auctionParam = auction.auctionParam;
@@ -75,7 +79,6 @@ contract ExchangeStorage is IExchangeStorage  {
         auctionParam.maxCurrencyAmount = maxCurrencyAmount;
         auctionParam.duration = duration;
         auctionParam.auctionState = AuctionState.Started;
-        auctionParam.curvingPrice = curvingPrice;
         // increment the id
         idCounter.increment();
         auctionsCollection.push(auction.id);
@@ -123,6 +126,19 @@ contract ExchangeStorage is IExchangeStorage  {
         }
     }
 
+    /**
+    
+     */
+    function setRedemptionBondPrice(uint classId, uint nonceId, address _creator) external onlyExchange {
+        bondRedemtionPrize[_creator][classId][nonceId] = IERC3475(bondAddress).balanceOf(_creator,classId,nonceId);
+    } 
+
+    function getRedemptionBondPrice( address creator , uint classId, uint nonceId) external  view returns(uint prize) {
+    
+        prize = bondRedemtionPrize[_creator][classId][nonceId];
+    }
+
+
     function getAuction(uint auctionId) external view returns (AuctionParam memory auction) {
         return _auctions[auctionId].auctionParam;
     }
@@ -139,8 +155,8 @@ contract ExchangeStorage is IExchangeStorage  {
         return minAuctionDuration;
     }
 
-    function getMaxAuctionDuration() external view returns(uint) {
-        return maxAuctionDuration;
+    function getMaxAuctionDuration(address bondAddress , uint classId, uint nonceId) external view returns(uint) {
+        return IDebondBond(bondAddress).bondDetails(classId, nonceId).maturityDate;
     }
 
     function getAuctionCount() external view returns(uint) {

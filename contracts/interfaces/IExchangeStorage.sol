@@ -104,4 +104,8 @@ interface IExchangeStorage {
     function getAuctionCount() external view returns(uint);
 
     function getAuctionIds() external view returns(uint[] memory);
+
+    function setRedemptionBondPrice(uint classId, uint nonceId, address _creator) external ;
+
+    function getRedemptionBondPrice(uint classId, uint nonceId) external  view returns(uint prize);
 }
