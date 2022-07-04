@@ -22,7 +22,7 @@ contract ExchangeStorage is IExchangeStorage  {
     
 
     // TODO: calculate the current Bond price  to be the bond price on the time during bidding . 
-    mapping(address =>  mapping(uint => mapping (uint => uint))) bondRedemtionPrize ;
+    mapping(address =>  mapping(uint => mapping (uint => uint))) bondRedemtionPrize;
     Counters.Counter private idCounter;
 
     constructor(address _governanceAddress)  {
@@ -66,7 +66,7 @@ contract ExchangeStorage is IExchangeStorage  {
         uint256 duration,
         address erc20CurrencyAddress,
         uint256 maxCurrencyAmount,
-        uint256 minCurrencyAmount,
+        uint256 minCurrencyAmount
     ) external onlyExchange {
         Auction storage auction = _auctions[idCounter._value];
         AuctionParam storage auctionParam = auction.auctionParam;
@@ -133,7 +133,7 @@ contract ExchangeStorage is IExchangeStorage  {
         bondRedemtionPrize[_creator][classId][nonceId] = IERC3475(bondAddress).balanceOf(_creator,classId,nonceId);
     } 
 
-    function getRedemptionBondPrice( address creator , uint classId, uint nonceId) external  view returns(uint prize) {
+    function getRedemptionBondPrice( address _creator , uint classId, uint nonceId) external  view returns(uint prize) {
     
         prize = bondRedemtionPrize[_creator][classId][nonceId];
     }

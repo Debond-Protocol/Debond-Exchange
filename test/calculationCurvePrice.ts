@@ -9,8 +9,6 @@ const ERC20Currency = artifacts.require("ERC20Currency");
 
 
 
-
-
 /**
  * 
  * @param maxPrice is the maxPrice and starting for auction.
@@ -18,14 +16,14 @@ const ERC20Currency = artifacts.require("ERC20Currency");
  * @param duration the time period taken without bid , so that face value reaches from maxPrice to minPrice.
  * @param isCurve bool to determine the formula for calculation from getting pricing from the curve formula or linear 
  * @param time is the time between initialTime to the presentTime 
- * @param initialPrice 
+ * @param initialPrice the 
  * @returns 
  */
 
  function calculationExchangePricing(maxPrice: number, minPrice: number, duration: number, isCurve: boolean, time: number, initialPrice: number): number {
     let bidPrice;
     if (!isCurve) {
-        bidPrice = minPrice + Math.pow((maxPrice - minPrice), 2) / Math.pow(duration, 2) * Math.pow(time - initialPrice, 2);
+        bidPrice = minPrice + Math.pow((maxPrice - minPrice), 2) / Math.pow(duration, 2) * Math.pow(time - maxPrice, 2);
     }
     else {
         bidPrice = minPrice + (maxPrice - minPrice) / duration * time;
@@ -93,24 +91,13 @@ contract('Exchange', function ([deployer, issuer, redeemer]) {
         await time.advanceBlockTo(100);
         // now considering that avg per block is 14.5 secs , thus in actual period time to be 1450 secs ()
 
-      //  let priceCalculated
+        let auctionInfo = await exchangeInstance.getAuction(0);
 
-     //   expect 
+        let priceCalculated = calculationExchangePricing(auctionInfo.finalPrice, auctionInfo.maxCurrencyAmount,auctionInfo.duration,auctionInfo.curvingPrice,timeInitial+ 100,auctionInfo.minCurrencyAmount); 
 
-
-
-
-
-
-
-
+        expect(priceCalculated).to.equal(auctionInfo);
 
     })
-
-
-
-
-
 
 })
 
