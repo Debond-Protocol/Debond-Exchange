@@ -150,31 +150,23 @@ contract('Exchange', async (accounts: string[]) => {
 
     })
 
-    // it('currentPrice works', async () => {
-    //     await exchangeInstance.createSecondaryMarketAuction(
-    //         seller,
-    //         [erc3475TestInstance.address],
-    //         [0],
-    //         [0],
-    //         [web3.utils.toWei('100', 'ether')],
-    //         erc20CurrencyInstance.address,
-    //         web3.utils.toWei('150', 'ether'),
-    //         web3.utils.toWei('200', 'ether'),
-    //         3600,
-    //         true,
-    //         {from: seller}
-    //     );
+    it('currentPrice works', async () => {
+         await exchangeInstance.createSecondaryMarketAuction(
+             seller,
+             [erc3475TestInstance.address],
+             [0],
+             [0],
+             [web3.utils.toWei('100', 'ether')],
+             erc20CurrencyInstance.address,
+             web3.utils.toWei('150', 'ether'),
+             web3.utils.toWei('200', 'ether'),
+             3600,
+             true,
+             {from: seller}
+         );
+             await timeout(5000);
 
-    //         await timeout(5000);
+         assert.lessThan(await exchangeInstance.currentPrice(0),195);
 
-
-    //     assert.lessThan(await exchangeInstance.currentPrice(0),195);
-
-
-
-    // })
-
-
-
-
+    })
 });
