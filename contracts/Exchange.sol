@@ -137,7 +137,10 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         }
         // else  if  its the floating rate, there will be decreasing parabolic curve as function of 
         else {
-            auctionPrice = auction.maxCurrencyAmount - ((auction.maxCurrencyAmount - auction.minCurrencyAmount)/(auction.duration**2)) * ((block.timestamp - auction.startingTime)**2);
+            auctionPrice =
+                maxCurrencyAmount -
+                ((maxCurrencyAmount - minCurrencyAmount) * (time_passed**2)) /
+                (duration**2);
         }
     }
 
