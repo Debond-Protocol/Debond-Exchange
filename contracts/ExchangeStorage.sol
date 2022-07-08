@@ -43,13 +43,13 @@ contract ExchangeStorage is IExchangeStorage  {
     }
 
     // only from Governance
-    function setMaxAuctionDuration(uint _maxAuctionDuration) external onlyExchange {
+    function setMaxAuctionDuration(uint _maxAuctionDuration) external onlyGovernance {
         require(_maxAuctionDuration != 0, "Exchange: _maxAuctionDuration must be above 0");
         require(_maxAuctionDuration > minAuctionDuration, "Exchange: _maxAuctionDuration must be above min Auction Duration");
         maxAuctionDuration = _maxAuctionDuration;
     }
 
-    function setMinAuctionDuration(uint _minAuctionDuration) external onlyExchange {
+    function setMinAuctionDuration(uint _minAuctionDuration) external onlyGovernance {
         require(_minAuctionDuration != 0, "Exchange: _minAuctionDuration must be above 0");
         require(maxAuctionDuration > _minAuctionDuration, "Exchange: _minAuctionDuration must be below max Auction Duration");
         minAuctionDuration = _minAuctionDuration;
