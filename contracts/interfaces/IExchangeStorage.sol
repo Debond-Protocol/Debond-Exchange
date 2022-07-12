@@ -14,6 +14,8 @@ pragma solidity ^0.8.0;
     limitations under the License.
 */
 
+import "erc3475/IERC3475.sol";
+
 interface IExchangeStorage {
 
 
@@ -25,9 +27,7 @@ interface IExchangeStorage {
 
     struct ERC3475Product {
         address ERC3475Address;
-        uint256 classId;
-        uint256 nonceId;
-        uint256 amount;
+        IERC3475.Transaction[] transactions;
     }
 
     struct AuctionParam {
@@ -47,8 +47,7 @@ interface IExchangeStorage {
     struct Auction {
         uint id;
         AuctionParam auctionParam;
-        mapping(uint256 => ERC3475Product) products;
-        uint256[] productIds;
+        ERC3475Product product;
     }
 
 
@@ -68,7 +67,7 @@ interface IExchangeStorage {
         bool curvingPrice
     ) external;
 
-    function addProduct(uint auctionId, uint productId, ERC3475Product memory product) external;
+    function setProduct(uint auctionId, ERC3475Product memory product) external;
 
     function completeAuction(uint auctionId, address successfulBidder, uint endingTime, uint finalPrice) external;
 
@@ -80,9 +79,7 @@ interface IExchangeStorage {
 
     function getAuction(uint auctionId) external view returns (AuctionParam memory auction);
 
-    function getERC3475ProductIds(uint auctionId) external view returns(uint[] memory);
-
-    function getERC3475Product(uint auctionId, uint productId) external view returns(ERC3475Product memory);
+    function getERC3475Product(uint auctionId) external view returns(ERC3475Product memory);
 
     function getMinAuctionDuration() external view returns(uint);
 
