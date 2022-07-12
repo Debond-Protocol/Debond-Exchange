@@ -1,4 +1,3 @@
-import {before} from "mocha";
 import {
     ERC20CurrencyInstance,
     ERC3475TestInstance,
@@ -15,7 +14,6 @@ const ERC20Currency = artifacts.require("ERC20Currency");
 async function timeout(delay: number) {
     return new Promise(resolve => setTimeout(resolve, delay));
 }
-
 
 
 contract('Exchange', async (accounts: string[]) => {
@@ -46,7 +44,7 @@ contract('Exchange', async (accounts: string[]) => {
 
 
         // 1.seller needs to get some bonds
-        await erc3475TestInstance.issue(seller, 0, 0, initialERC3475Issued)
+        await erc3475TestInstance.issue(seller, [{classId: 0, nonceId: 0, amount: initialERC3475Issued}])
 
         // 2. bidder gets some auction erc20 currency
         await erc20CurrencyInstance.mint(bidder, initialERC20Issued);
@@ -58,10 +56,10 @@ contract('Exchange', async (accounts: string[]) => {
 
     it('Should create Bond Auction', async () => {
 
-        await erc3475TestInstance.setApprovalFor(exchangeInstance.address, 0, true, {from: seller})
+        await erc3475TestInstance.setApprovalFor(exchangeInstance.address, true, {from: seller})
         await exchangeInstance.createSecondaryMarketAuction(
             seller,
-            [erc3475TestInstance.address],
+            erc3475TestInstance.address,
             [0],
             [0],
             [bidAmount],
@@ -77,7 +75,7 @@ contract('Exchange', async (accounts: string[]) => {
         assert.equal((await exchangeInstance.getAuctionIds()).length, 1);
     });
 
-    it('bid fixed bond Auction works given there is no previous bid for same auctionID', async () => {
+    it('should be able to successfully bid auction ', async () => {
 
 
         const maxPrice = (await exchangeInstance.getAuction(0)).maxCurrencyAmount.toString()
@@ -94,7 +92,7 @@ contract('Exchange', async (accounts: string[]) => {
         const erc3475Amount = 100;
         await exchangeInstance.createSecondaryMarketAuction(
             seller,
-            [erc3475TestInstance.address],
+            erc3475TestInstance.address,
             [0],
             [0],
             [erc3475Amount],
@@ -119,7 +117,7 @@ contract('Exchange', async (accounts: string[]) => {
         try {
             await exchangeInstance.bid(0, {from: bidder});
         } catch (e: any) {
-            assert("bid is completed already", e.reason);
+            assert.equal("bid is completed already", e.reason);
         }
 
     });
@@ -129,7 +127,7 @@ contract('Exchange', async (accounts: string[]) => {
 
         await exchangeInstance.createSecondaryMarketAuction(
             seller,
-            [erc3475TestInstance.address],
+            erc3475TestInstance.address,
             [0],
             [0],
             [web3.utils.toWei('100', 'ether')],
@@ -145,28 +143,30 @@ contract('Exchange', async (accounts: string[]) => {
         try {
             await exchangeInstance.bid(0, {from: seller});
         } catch (e: any) {
-            assert("Exchange: bidder should not be the auction owner", e.reason);
+            assert.equal("Exchange: bidder should not be the auction owner", e.reason);
         }
 
     })
 
-    it('currentPrice works', async () => {
-         await exchangeInstance.createSecondaryMarketAuction(
-             seller,
-             [erc3475TestInstance.address],
-             [0],
-             [0],
-             [web3.utils.toWei('100', 'ether')],
-             erc20CurrencyInstance.address,
-             web3.utils.toWei('150', 'ether'),
-             web3.utils.toWei('200', 'ether'),
-             3600,
-             true,
-             {from: seller}
-         );
-             await timeout(5000);
+    it('current Price should decrease from auction initial price', async () => {
+        await exchangeInstance.createSecondaryMarketAuction(
+            seller,
+            erc3475TestInstance.address,
+            [0],
+            [0],
+            [web3.utils.toWei('100', 'ether')],
+            erc20CurrencyInstance.address,
+            web3.utils.toWei('150', 'ether'),
+            web3.utils.toWei('200', 'ether'),
+            3600,
+            true,
+            {from: seller}
+        );
+        await timeout(5000);
 
-         assert.lessThan(await exchangeInstance.currentPrice(0),195);
+        const currentPrice = parseFloat(web3.utils.fromWei(await exchangeInstance.currentPrice(0)))
+        console.log(currentPrice)
+        assert.isTrue(currentPrice < 2000);
 
     })
 });
