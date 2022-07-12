@@ -22,6 +22,7 @@ import "./interfaces/IExchangeStorage.sol";
 contract ExchangeStorage is IExchangeStorage  {
 
     using Counters for Counters.Counter;
+    // for supplying the parameters of the bond functions.
 
     mapping(uint256 => Auction) _auctions;
     uint[] auctionsCollection;
@@ -78,7 +79,6 @@ contract ExchangeStorage is IExchangeStorage  {
     ) external onlyExchange {
         Auction storage auction = _auctions[idCounter._value];
         AuctionParam storage auctionParam = auction.auctionParam;
-
         auction.id = idCounter._value;
         auctionParam.startingTime = startingTime;
         auctionParam.owner = owner;
@@ -118,11 +118,16 @@ contract ExchangeStorage is IExchangeStorage  {
     }
 
     function completeERC3475Send(uint auctionId) external onlyExchange {
+        
         AuctionParam memory auction = _auctions[auctionId].auctionParam;
         uint[] memory productsIds = _auctions[auctionId].productIds;
         for(uint i; i < productsIds.length; i++) {
             ERC3475Product memory product = _auctions[auctionId].products[productsIds[i]];
-            IERC3475(product.ERC3475Address).transferFrom(address(this), auction.successfulBidder, product.classId, product.nonceId, product.amount);
+            
+            IERC3475.Transaction[] memory transactions = new IERC3475.Transaction[](1);
+            IERC3475.Transaction memory transaction = IERC3475.Transaction(product.classId, product.nonceId, product.amount);
+            transactions[0] = transaction;
+            IERC3475(product.ERC3475Address).transferFrom(address(this), auction.successfulBidder, transactions);
         }
     }
 
@@ -131,7 +136,12 @@ contract ExchangeStorage is IExchangeStorage  {
         uint[] memory productsIds = _auctions[auctionId].productIds;
         for(uint i; i < productsIds.length; i++) {
             ERC3475Product memory product = _auctions[auctionId].products[productsIds[i]];
-            IERC3475(product.ERC3475Address).transferFrom(address(this), auction.owner, product.classId, product.nonceId, product.amount);
+            
+            IERC3475.Transaction[] memory transactions = new IERC3475.Transaction[](1);
+            IERC3475.Transaction memory transaction = IERC3475.Transaction(product.classId, product.nonceId, product.amount);
+            transactions[0] = transaction;
+
+            IERC3475(product.ERC3475Address).transferFrom(address(this), auction.owner, transactions);
         }
     }
 

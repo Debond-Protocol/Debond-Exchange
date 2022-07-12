@@ -19,7 +19,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "./interfaces/IERC3475.sol";
+import "erc-3475/contracts/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
 import "debond-governance/contracts/utils/GovernanceOwnable.sol";
 
@@ -29,7 +29,7 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
 
     address exchangeStorageAddress;
     IExchangeStorage exchangeStorage;
-
+    
     // events for the auctions
 
     event AuctionStarted(uint256 _auctionId, address issuer);
@@ -83,12 +83,14 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(id);
 
         for(uint i = 0; i < erc3475Addresses.length; i++) {
-            IERC3475(erc3475Addresses[i]).transferFrom(
+        IERC3475.Transaction[] memory transactions = new IERC3475.Transaction[](1);
+        IERC3475.Transaction memory transaction = IERC3475.Transaction(classIds[i], nonceIds[i], amounts[i]);
+        transactions[0] = transaction;
+
+        IERC3475(erc3475Addresses[i]).transferFrom(
                 creator,
                 exchangeStorageAddress,
-                classIds[i],
-                nonceIds[i],
-                amounts[i]
+                transactions
             );
 
             IExchangeStorage.ERC3475Product memory product;
@@ -150,9 +152,9 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         // else  if  its the floating rate, there will be decreasing parabolic curve as function of 
         else {
             auctionPrice =
-                maxCurrencyAmount -
-                ((maxCurrencyAmount - minCurrencyAmount) * (time_passed**2)) /
-                (duration**2);
+                auction.maxCurrencyAmount -
+                ((auction.maxCurrencyAmount - auction.minCurrencyAmount) * (time_passed**2)) /
+                (auction.duration**2);
         }
     }
 
