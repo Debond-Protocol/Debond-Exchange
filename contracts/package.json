@@ -1,0 +1,28 @@
+{
+  "name": "@debond-protocol/debond-exchange-contracts",
+  "version": "0.0.1",
+  "description": "Debond Protocol Exchange Contracts",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Debond-Protocol/Debond-Exchange.git"
+  },
+  "keywords": [
+    "debond",
+    "protocol",
+    "exchange",
+    "contract"
+  ],
+  "author": "Debond Protocol <info@debond.org>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Debond-Protocol/Debond-Exchange/issues"
+  },
+  "homepage": "https://github.com/Debond-Protocol/Debond-Exchange#readme"
+}

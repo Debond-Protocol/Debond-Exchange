@@ -21,10 +21,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "erc3475/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
-import "debond-governance-contracts/utils/GovernanceOwnable.sol";
+import "@debond-protocol/debond-governance-contracts/utils/GovernanceOwnable.sol";
 
 contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
-
     using SafeERC20 for IERC20;
 
     address exchangeStorageAddress;
@@ -37,10 +36,11 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     event AuctionCompleted(uint256 _auctionId, address BidWinner);
     event BidSubmitted(address indexed sender, uint256 amount);
 
-    constructor(address _exchangeStorageAddress, address _governanceAddress) GovernanceOwnable(_governanceAddress) {
+    constructor(address _exchangeStorageAddress, address _governanceAddress)
+        GovernanceOwnable(_governanceAddress)
+    {
         exchangeStorageAddress = _exchangeStorageAddress;
         exchangeStorage = IExchangeStorage(_exchangeStorageAddress);
-
     }
 
     modifier onlyAuctionOwner(uint256 _auctionId) {
@@ -63,27 +63,56 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         uint256 auctionDuration,
         bool curvingPrice
     ) external {
-
         // validation steps
         require(
             classIds.length == nonceIds.length &&
-            classIds.length == amounts.length,
+                classIds.length == amounts.length,
             "Exchange: inputs not correct"
         );
-        require(auctionDuration < exchangeStorage.getMaxAuctionDuration(), "Exchange: Max Duration Exceeded");
-        require(auctionDuration >= exchangeStorage.getMinAuctionDuration(), "Exchange: Min Duration not reached");
-        require(minCurrencyAmount < maxCurrencyAmount, "Exchange: min Currency Amount Should be less than max currency amount");
-        require(minCurrencyAmount > 0, "Exchange: min Currency Amount Should be greater 0");
-        require(exchangeStorageAddress != address(0), "Storage address is null address");
+        require(
+            auctionDuration < exchangeStorage.getMaxAuctionDuration(),
+            "Exchange: Max Duration Exceeded"
+        );
+        require(
+            auctionDuration >= exchangeStorage.getMinAuctionDuration(),
+            "Exchange: Min Duration not reached"
+        );
+        require(
+            minCurrencyAmount < maxCurrencyAmount,
+            "Exchange: min Currency Amount Should be less than max currency amount"
+        );
+        require(
+            minCurrencyAmount > 0,
+            "Exchange: min Currency Amount Should be greater 0"
+        );
+        require(
+            exchangeStorageAddress != address(0),
+            "Storage address is null address"
+        );
 
         // we are transferring the bonds to the exchange contract
-        uint id = exchangeStorage.getAuctionCount();
-        exchangeStorage.createAuction(creator, block.timestamp, auctionDuration, currencyAddress, maxCurrencyAmount, minCurrencyAmount, curvingPrice);
-        IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(id);
+        uint256 id = exchangeStorage.getAuctionCount();
+        exchangeStorage.createAuction(
+            creator,
+            block.timestamp,
+            auctionDuration,
+            currencyAddress,
+            maxCurrencyAmount,
+            minCurrencyAmount,
+            curvingPrice
+        );
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(id);
 
-        IERC3475.Transaction[] memory transactions = new IERC3475.Transaction[](classIds.length);
-        for (uint i = 0; i < classIds.length; i++) {
-            IERC3475.Transaction memory transaction = IERC3475.Transaction(classIds[i], nonceIds[i], amounts[i]);
+        IERC3475.Transaction[] memory transactions = new IERC3475.Transaction[](
+            classIds.length
+        );
+        for (uint256 i = 0; i < classIds.length; i++) {
+            IERC3475.Transaction memory transaction = IERC3475.Transaction(
+                classIds[i],
+                nonceIds[i],
+                amounts[i]
+            );
             transactions[0] = transaction;
         }
 
@@ -100,31 +129,57 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         emit AuctionStarted(id, auction.owner);
     }
 
-    function bid(uint256 _auctionId) nonReentrant() external {
-        IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(_auctionId);
-        require(auction.startingTime != 0, "Exchange: Auction id given not found");
-        require(msg.sender != auction.owner, "Exchange: bidder should not be the auction owner");
-        require(block.timestamp <= auction.startingTime + auction.duration, "Exchange: Auction Expired");
+    function bid(uint256 _auctionId) external nonReentrant {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId);
+        require(
+            auction.startingTime != 0,
+            "Exchange: Auction id given not found"
+        );
+        require(
+            msg.sender != auction.owner,
+            "Exchange: bidder should not be the auction owner"
+        );
+        require(
+            block.timestamp <= auction.startingTime + auction.duration,
+            "Exchange: Auction Expired"
+        );
         require(
             auction.auctionState == IExchangeStorage.AuctionState.Started,
             "bid is completed already"
         );
         address bidder = msg.sender;
-        uint finalPrice = currentPrice(_auctionId);
+        uint256 finalPrice = currentPrice(_auctionId);
 
-        exchangeStorage.completeAuction(_auctionId, bidder, block.timestamp, finalPrice);
+        exchangeStorage.completeAuction(
+            _auctionId,
+            bidder,
+            block.timestamp,
+            finalPrice
+        );
 
-        IERC20(auction.erc20Currency).transferFrom(msg.sender, auction.owner, finalPrice);
+        IERC20(auction.erc20Currency).transferFrom(
+            msg.sender,
+            auction.owner,
+            finalPrice
+        );
         exchangeStorage.completeERC3475Send(_auctionId);
 
         emit AuctionCompleted(_auctionId, bidder);
     }
 
-    function cancelAuction(uint256 _auctionId) external onlyAuctionOwner(_auctionId) {
-        IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(_auctionId);
-        require(auction.auctionState == IExchangeStorage.AuctionState.Started, "auction already finished");
+    function cancelAuction(uint256 _auctionId)
+        external
+        onlyAuctionOwner(_auctionId)
+    {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId);
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Started,
+            "auction already finished"
+        );
 
-        uint cancellationTime = block.timestamp;
+        uint256 cancellationTime = block.timestamp;
         exchangeStorage.cancelAuction(_auctionId, cancellationTime);
 
         // sending back the bonds to the owner
@@ -133,19 +188,34 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         emit AuctionCancelled(_auctionId, msg.sender, cancellationTime);
     }
 
-    function currentPrice(uint256 _auctionId) public view returns (uint256 auctionPrice) {
-        IExchangeStorage.AuctionParam memory auction = exchangeStorage.getAuction(_auctionId);
+    function currentPrice(uint256 _auctionId)
+        public
+        view
+        returns (uint256 auctionPrice)
+    {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId);
         uint256 time_passed = block.timestamp - auction.startingTime;
-        require(time_passed < auction.duration, "auction ended,equal to faceValue");
-        auctionPrice = auction.maxCurrencyAmount - (auction.maxCurrencyAmount - auction.minCurrencyAmount) * time_passed / auction.duration;
+        require(
+            time_passed < auction.duration,
+            "auction ended,equal to faceValue"
+        );
+        auctionPrice =
+            auction.maxCurrencyAmount -
+            ((auction.maxCurrencyAmount - auction.minCurrencyAmount) *
+                time_passed) /
+            auction.duration;
     }
 
-    function getAuctionIds() external view returns (uint[] memory) {
+    function getAuctionIds() external view returns (uint256[] memory) {
         return exchangeStorage.getAuctionIds();
     }
 
-    function getAuction(uint _auctionId) external view returns (IExchangeStorage.AuctionParam memory) {
+    function getAuction(uint256 _auctionId)
+        external
+        view
+        returns (IExchangeStorage.AuctionParam memory)
+    {
         return exchangeStorage.getAuction(_auctionId);
     }
-
 }
