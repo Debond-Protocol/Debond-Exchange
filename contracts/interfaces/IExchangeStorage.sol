@@ -39,7 +39,6 @@ interface IExchangeStorage {
         uint256 maxCurrencyAmount;
         uint256 minCurrencyAmount;
         AuctionState auctionState;
-        bool curvingPrice;
         address successfulBidder;
         uint256 finalPrice;
     }
@@ -63,8 +62,7 @@ interface IExchangeStorage {
         uint256 duration,
         address erc20Currency,
         uint256 maxCurrencyAmount,
-        uint256 minCurrencyAmount,
-        bool curvingPrice
+        uint256 minCurrencyAmount
     ) external;
 
     function setProduct(uint auctionId, ERC3475Product memory product) external;
