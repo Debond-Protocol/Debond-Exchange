@@ -26,6 +26,7 @@ import "@debond-protocol/debond-governance-contracts/utils/GovernanceOwnable.sol
 contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
+    address DBITAddress;
     address exchangeStorageAddress;
     IExchangeStorage exchangeStorage;
 
@@ -36,11 +37,16 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     event AuctionCompleted(uint256 _auctionId, address BidWinner);
     event BidSubmitted(address indexed sender, uint256 amount);
 
-    constructor(address _exchangeStorageAddress, address _governanceAddress)
-        GovernanceOwnable(_governanceAddress)
+    constructor(
+        address _exchangeStorageAddress,
+        address _governanceAddress,
+        address _DBITAddress
+    )
+    GovernanceOwnable(_governanceAddress)
     {
         exchangeStorageAddress = _exchangeStorageAddress;
         exchangeStorage = IExchangeStorage(_exchangeStorageAddress);
+        DBITAddress = _DBITAddress;
     }
 
     modifier onlyAuctionOwner(uint256 _auctionId) {
@@ -51,22 +57,31 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         _;
     }
 
-    function createSecondaryMarketAuction(
+    /**
+    * @notice create an Auction with the ERC3475 Assets of the creator
+    * @param creator the creator of the  of the token to purchase with
+    * @param erc3475Address the address of the ERC3475 contract
+    * @param classIds ERC3475 class Ids collection
+    * @param nonceIds ERC3475 nonce Ids collection
+    * @param amounts collection of bond amounts
+    * @param minDBITAmount minimum auction's DBIT amount can reach
+    * @param maxDBITAmount maximum auction's DBIT amount can reach
+    * @param auctionDuration duration of the auction
+    */
+    function createAuction(
         address creator,
         address erc3475Address,
         uint256[] memory classIds,
         uint256[] memory nonceIds,
         uint256[] memory amounts,
-        address currencyAddress,
-        uint256 minCurrencyAmount,
-        uint256 maxCurrencyAmount,
-        uint256 auctionDuration,
-        bool curvingPrice
+        uint256 minDBITAmount,
+        uint256 maxDBITAmount,
+        uint256 auctionDuration
     ) external {
         // validation steps
         require(
             classIds.length == nonceIds.length &&
-                classIds.length == amounts.length,
+            classIds.length == amounts.length,
             "Exchange: inputs not correct"
         );
         require(
@@ -78,28 +93,26 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
             "Exchange: Min Duration not reached"
         );
         require(
-            minCurrencyAmount < maxCurrencyAmount,
-            "Exchange: min Currency Amount Should be less than max currency amount"
+            minDBITAmount < maxDBITAmount,
+            "Exchange: min DBIT Amount Should be less than max currency amount"
         );
         require(
-            minCurrencyAmount > 0,
-            "Exchange: min Currency Amount Should be greater 0"
+            minDBITAmount > 0,
+            "Exchange: min DBIT Amount Should be greater 0"
         );
         require(
             exchangeStorageAddress != address(0),
             "Storage address is null address"
         );
 
-        // we are transferring the bonds to the exchange contract
         uint256 id = exchangeStorage.getAuctionCount();
         exchangeStorage.createAuction(
             creator,
             block.timestamp,
             auctionDuration,
-            currencyAddress,
-            maxCurrencyAmount,
-            minCurrencyAmount,
-            curvingPrice
+            DBITAddress,
+            maxDBITAmount,
+            minDBITAmount
         );
         IExchangeStorage.AuctionParam memory auction = exchangeStorage
             .getAuction(id);
@@ -121,6 +134,7 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         product.transactions = transactions;
         exchangeStorage.setProduct(id, product);
 
+        // we are transferring the bonds to the exchange contract
         IERC3475(erc3475Address).transferFrom(
             creator,
             exchangeStorageAddress,
@@ -129,6 +143,10 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
         emit AuctionStarted(id, auction.owner);
     }
 
+    /**
+    * @notice bid the auction, the first bidder gets the Assets
+    * @param _auctionId Id of the auction requested
+    */
     function bid(uint256 _auctionId) external nonReentrant {
         IExchangeStorage.AuctionParam memory auction = exchangeStorage
             .getAuction(_auctionId);
@@ -158,7 +176,7 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
             finalPrice
         );
 
-        IERC20(auction.erc20Currency).transferFrom(
+        IERC20(auction.erc20Currency).safeTransferFrom(
             msg.sender,
             auction.owner,
             finalPrice
@@ -169,11 +187,11 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     }
 
     function cancelAuction(uint256 _auctionId)
-        external
-        onlyAuctionOwner(_auctionId)
+    external
+    onlyAuctionOwner(_auctionId)
     {
         IExchangeStorage.AuctionParam memory auction = exchangeStorage
-            .getAuction(_auctionId);
+        .getAuction(_auctionId);
         require(
             auction.auctionState == IExchangeStorage.AuctionState.Started,
             "auction already finished"
@@ -189,22 +207,22 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     }
 
     function currentPrice(uint256 _auctionId)
-        public
-        view
-        returns (uint256 auctionPrice)
+    public
+    view
+    returns (uint256 auctionPrice)
     {
         IExchangeStorage.AuctionParam memory auction = exchangeStorage
-            .getAuction(_auctionId);
+        .getAuction(_auctionId);
         uint256 time_passed = block.timestamp - auction.startingTime;
         require(
             time_passed < auction.duration,
             "auction ended,equal to faceValue"
         );
         auctionPrice =
-            auction.maxCurrencyAmount -
-            ((auction.maxCurrencyAmount - auction.minCurrencyAmount) *
-                time_passed) /
-            auction.duration;
+        auction.maxCurrencyAmount -
+        ((auction.maxCurrencyAmount - auction.minCurrencyAmount) *
+        time_passed) /
+        auction.duration;
     }
 
     function getAuctionIds() external view returns (uint256[] memory) {
@@ -212,9 +230,9 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
     }
 
     function getAuction(uint256 _auctionId)
-        external
-        view
-        returns (IExchangeStorage.AuctionParam memory)
+    external
+    view
+    returns (IExchangeStorage.AuctionParam memory)
     {
         return exchangeStorage.getAuction(_auctionId);
     }

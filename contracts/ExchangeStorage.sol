@@ -74,8 +74,7 @@ contract ExchangeStorage is IExchangeStorage  {
         uint256 duration,
         address erc20CurrencyAddress,
         uint256 maxCurrencyAmount,
-        uint256 minCurrencyAmount,
-        bool curvingPrice
+        uint256 minCurrencyAmount
     ) external onlyExchange {
         Auction storage auction = _auctions[idCounter._value];
         AuctionParam storage auctionParam = auction.auctionParam;
@@ -87,7 +86,6 @@ contract ExchangeStorage is IExchangeStorage  {
         auctionParam.maxCurrencyAmount = maxCurrencyAmount;
         auctionParam.duration = duration;
         auctionParam.auctionState = AuctionState.Started;
-        auctionParam.curvingPrice = curvingPrice;
         // increment the id
         idCounter.increment();
         auctionsCollection.push(auction.id);
