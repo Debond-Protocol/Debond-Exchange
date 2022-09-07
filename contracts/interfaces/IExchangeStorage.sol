@@ -17,73 +17,75 @@ pragma solidity ^0.8.0;
 import "erc3475/IERC3475.sol";
 
 interface IExchangeStorage {
+  enum AuctionState {
+    Started,
+    Completed,
+    Cancelled
+  }
 
+  struct ERC3475Product {
+    address ERC3475Address;
+    IERC3475.Transaction[] transactions;
+  }
 
-    enum AuctionState {
-        Started,
-        Completed,
-        Cancelled
-    }
+  struct AuctionParam {
+    address owner;
+    uint256 startingTime;
+    uint256 endingTime;
+    uint256 duration;
+    address erc20Currency;
+    uint256 maxCurrencyAmount;
+    uint256 minCurrencyAmount;
+    AuctionState auctionState;
+    address successfulBidder;
+    uint256 finalPrice;
+  }
 
-    struct ERC3475Product {
-        address ERC3475Address;
-        IERC3475.Transaction[] transactions;
-    }
+  struct Auction {
+    uint256 id;
+    AuctionParam auctionParam;
+    ERC3475Product product;
+  }
 
-    struct AuctionParam {
-        address owner;
-        uint256 startingTime;
-        uint256 endingTime;
-        uint256 duration;
-        address erc20Currency;
-        uint256 maxCurrencyAmount;
-        uint256 minCurrencyAmount;
-        AuctionState auctionState;
-        address successfulBidder;
-        uint256 finalPrice;
-    }
+  function setExchangeAddress(address exchangeAddress) external;
 
-    struct Auction {
-        uint id;
-        AuctionParam auctionParam;
-        ERC3475Product product;
-    }
+  function setMaxAuctionDuration(uint256 maxAuctionDuration) external;
 
+  function setMinAuctionDuration(uint256 minAuctionDuration) external;
 
-    function setExchangeAddress(address exchangeAddress) external;
+  function createAuction(
+    address owner,
+    uint256 startingTime,
+    uint256 duration,
+    address erc20Currency,
+    uint256 maxCurrencyAmount,
+    uint256 minCurrencyAmount
+  ) external;
 
-    function setMaxAuctionDuration(uint maxAuctionDuration) external;
+  function setProduct(uint256 auctionId, ERC3475Product memory product) external;
 
-    function setMinAuctionDuration(uint minAuctionDuration) external;
+  function completeAuction(
+    uint256 auctionId,
+    address successfulBidder,
+    uint256 endingTime,
+    uint256 finalPrice
+  ) external;
 
-    function createAuction(
-        address owner,
-        uint256 startingTime,
-        uint256 duration,
-        address erc20Currency,
-        uint256 maxCurrencyAmount,
-        uint256 minCurrencyAmount
-    ) external;
+  function completeERC3475Send(uint256 auctionId) external;
 
-    function setProduct(uint auctionId, ERC3475Product memory product) external;
+  function cancelERC3475Send(uint256 auctionId) external;
 
-    function completeAuction(uint auctionId, address successfulBidder, uint endingTime, uint finalPrice) external;
+  function cancelAuction(uint256 auctionId, uint256 endingTime) external;
 
-    function completeERC3475Send(uint auctionId) external;
+  function getAuction(uint256 auctionId) external view returns (AuctionParam memory auction);
 
-    function cancelERC3475Send(uint auctionId) external;
+  function getERC3475Product(uint256 auctionId) external view returns (ERC3475Product memory);
 
-    function cancelAuction(uint auctionId, uint endingTime) external;
+  function getMinAuctionDuration() external view returns (uint256);
 
-    function getAuction(uint auctionId) external view returns (AuctionParam memory auction);
+  function getMaxAuctionDuration() external view returns (uint256);
 
-    function getERC3475Product(uint auctionId) external view returns(ERC3475Product memory);
+  function getAuctionCount() external view returns (uint256);
 
-    function getMinAuctionDuration() external view returns(uint);
-
-    function getMaxAuctionDuration() external view returns(uint);
-
-    function getAuctionCount() external view returns(uint);
-
-    function getAuctionIds() external view returns(uint[] memory);
+  function getAuctionIds() external view returns (uint256[] memory);
 }

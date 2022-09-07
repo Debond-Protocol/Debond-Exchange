@@ -19,135 +19,138 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "erc3475/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
 
-contract ExchangeStorage is IExchangeStorage  {
+contract ExchangeStorage is IExchangeStorage {
+  using Counters for Counters.Counter;
+  // for supplying the parameters of the bond functions.
 
-    using Counters for Counters.Counter;
-    // for supplying the parameters of the bond functions.
+  mapping(uint256 => Auction) _auctions;
+  uint256[] auctionsCollection;
 
-    mapping(uint256 => Auction) _auctions;
-    uint[] auctionsCollection;
+  address exchangeAddress;
+  address governanceAddress;
+  uint256 maxAuctionDuration;
+  uint256 minAuctionDuration;
 
-    address exchangeAddress;
-    address governanceAddress;
-    uint maxAuctionDuration;
-    uint minAuctionDuration;
+  Counters.Counter private idCounter;
 
-    Counters.Counter private idCounter;
+  constructor(address _governanceAddress) {
+    governanceAddress = _governanceAddress;
+    maxAuctionDuration = 30 days;
+    minAuctionDuration = 3600;
+  }
 
-    constructor(address _governanceAddress)  {
-        governanceAddress = _governanceAddress;
-        maxAuctionDuration = 30 days;
-        minAuctionDuration = 3600;
+  modifier onlyExchange() {
+    require(msg.sender == exchangeAddress, "Exchange Storage: not allowed");
+    _;
+  }
+
+  modifier onlyGovernance() {
+    require(msg.sender == governanceAddress, "Exchange Storage: not allowed");
+    _;
+  }
+
+  // Only Governance
+  function setExchangeAddress(address _exchangeAddress) external onlyGovernance {
+    exchangeAddress = _exchangeAddress;
+  }
+
+  // only from Governance
+  function setMaxAuctionDuration(uint256 _maxAuctionDuration) external onlyGovernance {
+    require(_maxAuctionDuration != 0, "Exchange: _maxAuctionDuration must be above 0");
+    require(_maxAuctionDuration > minAuctionDuration, "Exchange: _maxAuctionDuration must be above min Auction Duration");
+    maxAuctionDuration = _maxAuctionDuration;
+  }
+
+  function setMinAuctionDuration(uint256 _minAuctionDuration) external onlyGovernance {
+    require(_minAuctionDuration != 0, "Exchange: _minAuctionDuration must be above 0");
+    require(maxAuctionDuration > _minAuctionDuration, "Exchange: _minAuctionDuration must be below max Auction Duration");
+    minAuctionDuration = _minAuctionDuration;
+  }
+
+  function createAuction(
+    address owner,
+    uint256 startingTime,
+    uint256 duration,
+    address erc20CurrencyAddress,
+    uint256 maxCurrencyAmount,
+    uint256 minCurrencyAmount
+  ) external onlyExchange {
+    Auction storage auction = _auctions[idCounter._value];
+    AuctionParam storage auctionParam = auction.auctionParam;
+    auction.id = idCounter._value;
+    auctionParam.startingTime = startingTime;
+    auctionParam.owner = owner;
+    auctionParam.erc20Currency = erc20CurrencyAddress;
+    auctionParam.minCurrencyAmount = minCurrencyAmount;
+    auctionParam.maxCurrencyAmount = maxCurrencyAmount;
+    auctionParam.duration = duration;
+    auctionParam.auctionState = AuctionState.Started;
+    // increment the id
+    idCounter.increment();
+    auctionsCollection.push(auction.id);
+  }
+
+  function setProduct(uint256 _auctionId, ERC3475Product memory _product) external onlyExchange {
+    Auction storage auction = _auctions[_auctionId];
+    ERC3475Product storage product = auction.product;
+    product.ERC3475Address = _product.ERC3475Address;
+    for (uint256 i; i < _product.transactions.length; i++) {
+      product.transactions.push(_product.transactions[i]);
     }
+  }
 
-    modifier onlyExchange() {
-        require(msg.sender == exchangeAddress, "Exchange Storage: not allowed");
-        _;
-    }
+  function completeAuction(
+    uint256 auctionId,
+    address successfulBidder,
+    uint256 endingTime,
+    uint256 finalPrice
+  ) external onlyExchange {
+    AuctionParam storage auction = _auctions[auctionId].auctionParam;
+    auction.successfulBidder = successfulBidder;
+    auction.endingTime = endingTime;
+    auction.finalPrice = finalPrice;
+    auction.auctionState = AuctionState.Completed;
+  }
 
-    modifier onlyGovernance() {
-        require(msg.sender == governanceAddress, "Exchange Storage: not allowed");
-        _;
-    }
+  function cancelAuction(uint256 auctionId, uint256 endingTime) external onlyExchange {
+    AuctionParam storage auction = _auctions[auctionId].auctionParam;
+    auction.endingTime = endingTime;
+    auction.auctionState = AuctionState.Cancelled;
+  }
 
-    // Only Governance
-    function setExchangeAddress(address _exchangeAddress) external onlyGovernance {
-        exchangeAddress = _exchangeAddress;
-    }
+  function completeERC3475Send(uint256 auctionId) external onlyExchange {
+    AuctionParam memory auction = _auctions[auctionId].auctionParam;
+    ERC3475Product memory product = _auctions[auctionId].product;
+    IERC3475(product.ERC3475Address).transferFrom(address(this), auction.successfulBidder, product.transactions);
+  }
 
-    // only from Governance
-    function setMaxAuctionDuration(uint _maxAuctionDuration) external onlyGovernance {
-        require(_maxAuctionDuration != 0, "Exchange: _maxAuctionDuration must be above 0");
-        require(_maxAuctionDuration > minAuctionDuration, "Exchange: _maxAuctionDuration must be above min Auction Duration");
-        maxAuctionDuration = _maxAuctionDuration;
-    }
+  function cancelERC3475Send(uint256 auctionId) external onlyExchange {
+    AuctionParam memory auction = _auctions[auctionId].auctionParam;
+    ERC3475Product memory product = _auctions[auctionId].product;
+    IERC3475(product.ERC3475Address).transferFrom(address(this), auction.owner, product.transactions);
+  }
 
-    function setMinAuctionDuration(uint _minAuctionDuration) external onlyGovernance {
-        require(_minAuctionDuration != 0, "Exchange: _minAuctionDuration must be above 0");
-        require(maxAuctionDuration > _minAuctionDuration, "Exchange: _minAuctionDuration must be below max Auction Duration");
-        minAuctionDuration = _minAuctionDuration;
-    }
+  function getAuction(uint256 auctionId) external view returns (AuctionParam memory auction) {
+    return _auctions[auctionId].auctionParam;
+  }
 
-    function createAuction(
-        address owner,
-        uint256 startingTime,
-        uint256 duration,
-        address erc20CurrencyAddress,
-        uint256 maxCurrencyAmount,
-        uint256 minCurrencyAmount
-    ) external onlyExchange {
-        Auction storage auction = _auctions[idCounter._value];
-        AuctionParam storage auctionParam = auction.auctionParam;
-        auction.id = idCounter._value;
-        auctionParam.startingTime = startingTime;
-        auctionParam.owner = owner;
-        auctionParam.erc20Currency = erc20CurrencyAddress;
-        auctionParam.minCurrencyAmount = minCurrencyAmount;
-        auctionParam.maxCurrencyAmount = maxCurrencyAmount;
-        auctionParam.duration = duration;
-        auctionParam.auctionState = AuctionState.Started;
-        // increment the id
-        idCounter.increment();
-        auctionsCollection.push(auction.id);
-    }
+  function getERC3475Product(uint256 auctionId) external view returns (ERC3475Product memory) {
+    return _auctions[auctionId].product;
+  }
 
-    function setProduct(uint _auctionId, ERC3475Product memory _product) external onlyExchange {
-        Auction storage auction = _auctions[_auctionId];
-        ERC3475Product storage product = auction.product;
-        product.ERC3475Address = _product.ERC3475Address;
-        for (uint i; i < _product.transactions.length; i++) {
-            product.transactions.push(_product.transactions[i]);
-        }
-    }
+  function getMinAuctionDuration() external view returns (uint256) {
+    return minAuctionDuration;
+  }
 
-    function completeAuction(uint auctionId, address successfulBidder, uint endingTime, uint finalPrice) external onlyExchange {
-        AuctionParam storage auction = _auctions[auctionId].auctionParam;
-        auction.successfulBidder = successfulBidder;
-        auction.endingTime = endingTime;
-        auction.finalPrice = finalPrice;
-        auction.auctionState = AuctionState.Completed;
-    }
+  function getMaxAuctionDuration() external view returns (uint256) {
+    return maxAuctionDuration;
+  }
 
-    function cancelAuction(uint auctionId, uint endingTime) external onlyExchange {
-        AuctionParam storage auction = _auctions[auctionId].auctionParam;
-        auction.endingTime = endingTime;
-        auction.auctionState = AuctionState.Cancelled;
-    }
+  function getAuctionCount() external view returns (uint256) {
+    return idCounter._value;
+  }
 
-    function completeERC3475Send(uint auctionId) external onlyExchange {
-        AuctionParam memory auction = _auctions[auctionId].auctionParam;
-        ERC3475Product memory product = _auctions[auctionId].product;
-        IERC3475(product.ERC3475Address).transferFrom(address(this), auction.successfulBidder, product.transactions);
-    }
-
-    function cancelERC3475Send(uint auctionId) external onlyExchange {
-        AuctionParam memory auction = _auctions[auctionId].auctionParam;
-        ERC3475Product memory product = _auctions[auctionId].product;
-        IERC3475(product.ERC3475Address).transferFrom(address(this), auction.owner, product.transactions);
-
-    }
-
-    function getAuction(uint auctionId) external view returns (AuctionParam memory auction) {
-        return _auctions[auctionId].auctionParam;
-    }
-
-    function getERC3475Product(uint auctionId) external view returns(ERC3475Product memory) {
-        return _auctions[auctionId].product;
-    }
-
-    function getMinAuctionDuration() external view returns(uint) {
-        return minAuctionDuration;
-    }
-
-    function getMaxAuctionDuration() external view returns(uint) {
-        return maxAuctionDuration;
-    }
-
-    function getAuctionCount() external view returns(uint) {
-        return idCounter._value;
-    }
-
-    function getAuctionIds() external view returns(uint[] memory) {
-        return auctionsCollection;
-    }
+  function getAuctionIds() external view returns (uint256[] memory) {
+    return auctionsCollection;
+  }
 }
