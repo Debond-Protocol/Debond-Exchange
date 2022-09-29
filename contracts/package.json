@@ -1,6 +1,6 @@
 {
   "name": "@debond-protocol/debond-exchange-contracts",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "Debond Protocol Exchange Contracts",
   "main": "index.js",
   "directories": {
