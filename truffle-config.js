@@ -7,7 +7,7 @@ const web3 = new Web3();
 module.exports = {
   plugins: ['truffle-plugin-verify'],
   api_keys: {
-    etherscan: process.env.ETHERSCAN_API_KEY,
+    etherscan: process.env.ETHERSCAN_API_KEY
   },
   networks: {
     development: {
@@ -20,7 +20,7 @@ module.exports = {
       provider: function () {
         return new HDWalletProvider(process.env.TESTNET_PRIVATE_KEY, `https://rinkeby.infura.io/v3/${process.env.INFURA_Access_Token}`);
       },
-      network_id: 4,
+      network_id: 4
       // gas: 30000000, //from ganache-cli output
       // gasPrice: web3.utils.toWei('1', 'gwei')
     },
@@ -38,7 +38,7 @@ module.exports = {
   },
   compilers: {
     solc: {
-      version: "0.8.13",
+      version: "0.8.17",
       settings: { // See the solidity docs for advice about optimization and evmVersion
         optimizer: {
           enabled: true,

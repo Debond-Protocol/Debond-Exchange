@@ -1,5 +1,3 @@
-pragma solidity ^0.8.0;
-
 // SPDX-License-Identifier: apache 2.0
 /*
     Copyright 2022 Debond Protocol <info@debond.org>
@@ -13,6 +11,8 @@ pragma solidity ^0.8.0;
     See the License for the specific language governing permissions and
     limitations under the License.
 */
+
+pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -28,14 +28,14 @@ contract ExchangeStorage is IExchangeStorage  {
     uint[] auctionsCollection;
 
     address exchangeAddress;
-    address governanceAddress;
+    address executableAddress;
     uint maxAuctionDuration;
     uint minAuctionDuration;
 
     Counters.Counter private idCounter;
 
-    constructor(address _governanceAddress)  {
-        governanceAddress = _governanceAddress;
+    constructor(address _executableAddress)  {
+        executableAddress = _executableAddress;
         maxAuctionDuration = 30 days;
         minAuctionDuration = 3600;
     }
@@ -45,24 +45,24 @@ contract ExchangeStorage is IExchangeStorage  {
         _;
     }
 
-    modifier onlyGovernance() {
-        require(msg.sender == governanceAddress, "Exchange Storage: not allowed");
+    modifier onlyExecutable() {
+        require(msg.sender == executableAddress, "Exchange Storage: not allowed");
         _;
     }
 
-    // Only Governance
-    function setExchangeAddress(address _exchangeAddress) external onlyGovernance {
+    // Only Executable
+    function setExchangeAddress(address _exchangeAddress) external onlyExecutable {
         exchangeAddress = _exchangeAddress;
     }
 
-    // only from Governance
-    function setMaxAuctionDuration(uint _maxAuctionDuration) external onlyGovernance {
+    // only from Executable
+    function setMaxAuctionDuration(uint _maxAuctionDuration) external onlyExecutable {
         require(_maxAuctionDuration != 0, "Exchange: _maxAuctionDuration must be above 0");
         require(_maxAuctionDuration > minAuctionDuration, "Exchange: _maxAuctionDuration must be above min Auction Duration");
         maxAuctionDuration = _maxAuctionDuration;
     }
 
-    function setMinAuctionDuration(uint _minAuctionDuration) external onlyGovernance {
+    function setMinAuctionDuration(uint _minAuctionDuration) external onlyExecutable {
         require(_minAuctionDuration != 0, "Exchange: _minAuctionDuration must be above 0");
         require(maxAuctionDuration > _minAuctionDuration, "Exchange: _minAuctionDuration must be below max Auction Duration");
         minAuctionDuration = _minAuctionDuration;

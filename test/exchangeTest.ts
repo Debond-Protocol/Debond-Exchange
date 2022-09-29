@@ -1,6 +1,5 @@
 import {
     DBITTestInstance,
-    ERC20CurrencyInstance,
     ERC3475TestInstance,
     ExchangeInstance, ExchangeStorageInstance,
 } from "../types/truffle-contracts";
@@ -18,7 +17,7 @@ async function timeout(delay: number) {
 
 
 contract('Exchange', async (accounts: string[]) => {
-    const [governanceAddress, bankAddress, airdropAddress, exchangeAddress, seller, bidder] = accounts
+    const [externalAddress, bankAddress, airdropAddress, seller, bidder] = accounts
 
     let exchangeInstance: ExchangeInstance;
     let exchangeStorageInstance: ExchangeStorageInstance;
@@ -146,6 +145,8 @@ contract('Exchange', async (accounts: string[]) => {
     })
 
     it('current Price should decrease from auction initial price', async () => {
+
+        await timeout(7000);
         await exchangeInstance.createAuction(
             seller,
             erc3475TestInstance.address,
@@ -157,7 +158,6 @@ contract('Exchange', async (accounts: string[]) => {
             3600,
             {from: seller}
         );
-        await timeout(5000);
 
         const currentPrice = parseFloat(web3.utils.fromWei(await exchangeInstance.currentPrice(0)))
         console.log(currentPrice)

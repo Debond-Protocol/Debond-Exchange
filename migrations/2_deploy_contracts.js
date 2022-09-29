@@ -5,10 +5,10 @@ const DBIT = artifacts.require("DBITTest");
 
 module.exports = async function (deployer, network, accounts) {
 
-  const [governanceAddress, bankAddress, airdropAddress, exchangeAddress] = accounts
+  const [governanceAddress, bankAddress, airdropAddress] = accounts
 
   await deployer.deploy(ERC3475Test);
-  await deployer.deploy(DBIT, governanceAddress, bankAddress, airdropAddress, exchangeAddress);
+  await deployer.deploy(DBIT, governanceAddress, bankAddress, airdropAddress);
   await deployer.deploy(ExchangeStorage, accounts[0]);
 
   const exchangeStorageInstance = await ExchangeStorage.deployed();

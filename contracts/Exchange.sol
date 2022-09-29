@@ -1,5 +1,3 @@
-pragma solidity ^0.8.0;
-
 // SPDX-License-Identifier: apache 2.0
 /*
     Copyright 2022 Debond Protocol <info@debond.org>
@@ -14,6 +12,8 @@ pragma solidity ^0.8.0;
     limitations under the License.
 */
 
+pragma solidity ^0.8.17;
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/AccessControl.sol";
@@ -21,9 +21,9 @@ import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "erc3475/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
-import "@debond-protocol/debond-governance-contracts/utils/GovernanceOwnable.sol";
+import "@debond-protocol/debond-governance-contracts/utils/ExecutableOwnable.sol";
 
-contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
+contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
     using SafeERC20 for IERC20;
 
     address DBITAddress;
@@ -39,10 +39,10 @@ contract Exchange is GovernanceOwnable, AccessControl, ReentrancyGuard {
 
     constructor(
         address _exchangeStorageAddress,
-        address _governanceAddress,
+        address _executableAddress,
         address _DBITAddress
     )
-    GovernanceOwnable(_governanceAddress)
+    ExecutableOwnable(_executableAddress)
     {
         exchangeStorageAddress = _exchangeStorageAddress;
         exchangeStorage = IExchangeStorage(_exchangeStorageAddress);

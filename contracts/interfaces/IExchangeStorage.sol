@@ -1,5 +1,3 @@
-pragma solidity ^0.8.0;
-
 // SPDX-License-Identifier: apache 2.0
 /*
     Copyright 2022 Debond Protocol <info@debond.org>
@@ -13,6 +11,8 @@ pragma solidity ^0.8.0;
     See the License for the specific language governing permissions and
     limitations under the License.
 */
+
+pragma solidity ^0.8.17;
 
 import "erc3475/IERC3475.sol";
 
