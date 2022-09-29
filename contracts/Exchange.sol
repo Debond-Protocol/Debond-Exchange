@@ -100,10 +100,6 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             minDBITAmount > 0,
             "Exchange: min DBIT Amount Should be greater 0"
         );
-        require(
-            exchangeStorageAddress != address(0),
-            "Storage address is null address"
-        );
 
         uint256 id = exchangeStorage.getAuctionCount();
         exchangeStorage.createAuction(
@@ -169,6 +165,12 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
         address bidder = msg.sender;
         uint256 finalPrice = currentPrice(_auctionId);
 
+        IERC20(auction.erc20Currency).safeTransferFrom(
+            msg.sender,
+            auction.owner,
+            finalPrice
+        );
+
         exchangeStorage.completeAuction(
             _auctionId,
             bidder,
@@ -176,11 +178,6 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             finalPrice
         );
 
-        IERC20(auction.erc20Currency).safeTransferFrom(
-            msg.sender,
-            auction.owner,
-            finalPrice
-        );
         exchangeStorage.completeERC3475Send(_auctionId);
 
         emit AuctionCompleted(_auctionId, bidder);
@@ -225,8 +222,8 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
         auction.duration;
     }
 
-    function getAuctionIds() external view returns (uint256[] memory) {
-        return exchangeStorage.getAuctionIds();
+    function getAuctionIds() external view returns (uint256 memory) {
+        return exchangeStorage.getAuctionCount();
     }
 
     function getAuction(uint256 _auctionId)

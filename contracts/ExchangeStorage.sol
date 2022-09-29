@@ -88,7 +88,6 @@ contract ExchangeStorage is IExchangeStorage  {
         auctionParam.auctionState = AuctionState.Started;
         // increment the id
         idCounter.increment();
-        auctionsCollection.push(auction.id);
     }
 
     function setProduct(uint _auctionId, ERC3475Product memory _product) external onlyExchange {
@@ -145,9 +144,5 @@ contract ExchangeStorage is IExchangeStorage  {
 
     function getAuctionCount() external view returns(uint) {
         return idCounter._value;
-    }
-
-    function getAuctionIds() external view returns(uint[] memory) {
-        return auctionsCollection;
     }
 }
