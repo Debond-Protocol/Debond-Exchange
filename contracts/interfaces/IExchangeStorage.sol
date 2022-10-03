@@ -84,6 +84,4 @@ interface IExchangeStorage {
     function getMaxAuctionDuration() external view returns(uint);
 
     function getAuctionCount() external view returns(uint);
-
-    function getAuctionIds() external view returns(uint[] memory);
 }
