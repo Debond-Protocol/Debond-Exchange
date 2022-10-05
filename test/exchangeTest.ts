@@ -17,7 +17,7 @@ async function timeout(delay: number) {
 
 
 contract('Exchange', async (accounts: string[]) => {
-    const [externalAddress, bankAddress, airdropAddress, seller, bidder] = accounts
+    const [externalAddress, bankAddress, seller, bidder] = accounts
 
     let exchangeInstance: ExchangeInstance;
     let exchangeStorageInstance: ExchangeStorageInstance;
@@ -71,16 +71,16 @@ contract('Exchange', async (accounts: string[]) => {
         )
         console.log("exchange balance erc3475 tokens: " + (await erc3475TestInstance.balanceOf(exchangeStorageInstance.address, 0, 0)).toString());
 
-        assert.equal((await exchangeInstance.getAuctionIds()).length, 1);
+        assert.equal((await exchangeStorageInstance.getAuctionCount()).toNumber(), 1);
     });
 
     it('should be able to successfully bid auction ', async () => {
 
 
-        const maxPrice = (await exchangeInstance.getAuction(0)).maxCurrencyAmount.toString()
+        const maxPrice = (await exchangeStorageInstance.getAuction(0)).maxCurrencyAmount.toString()
         await DBITInstance.approve(exchangeInstance.address, maxPrice, {from: bidder});
         await exchangeInstance.bid(0, {from: bidder});
-        const finalPrice = (await exchangeInstance.getAuction(0)).finalPrice
+        const finalPrice = (await exchangeStorageInstance.getAuction(0)).finalPrice
         assert.equal((await erc3475TestInstance.balanceOf(bidder, 0, 0)).toString(), bidAmount)
         assert.equal(web3.utils.toBN(initialERC20Issued).sub(await DBITInstance.balanceOf(bidder)).toString(), ((finalPrice)).toString())
         assert.equal((await DBITInstance.balanceOf(seller)).toString(), finalPrice.toString())
@@ -103,7 +103,7 @@ contract('Exchange', async (accounts: string[]) => {
         )
 
         await exchangeInstance.cancelAuction(1, {from: seller});
-        let auctionStatus = (await exchangeInstance.getAuction(1)).auctionState;
+        let auctionStatus = (await exchangeStorageInstance.getAuction(1)).auctionState;
 
         assert.equal(auctionStatus.toString(), AuctionStatus.Cancelled.toString());
 

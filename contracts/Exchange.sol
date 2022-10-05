@@ -224,16 +224,4 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
         time_passed) /
         auction.duration;
     }
-
-    function getAuctionIds() external view returns (uint256[] memory) {
-        return exchangeStorage.getAuctionIds();
-    }
-
-    function getAuction(uint256 _auctionId)
-    external
-    view
-    returns (IExchangeStorage.AuctionParam memory)
-    {
-        return exchangeStorage.getAuction(_auctionId);
-    }
 }
