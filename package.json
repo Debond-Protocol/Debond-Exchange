@@ -1,13 +1,20 @@
 {
   "name": "debond-exchange",
   "version": "1.0.0",
-  "description": "",
+  "description": "module for allowing bond holders to auction their bonds via  P2P FCFS english auction method",
   "main": "truffle-config.js",
   "directories": {
     "test": "test"
   },
   "scripts": {
-    "generate-types": "npx typechain --target=truffle-v5 'build/contracts/*.json'"
+    "generate-types": "npx typechain --target=truffle-v5 'build/contracts/*.json'",
+    "lint": "yarn solhint && yarn prettier:check",
+    "lint:check": "yarn prettier:check && yarn solhint:check",
+    "postinstall": "husky install",
+    "prettier": "prettier --config \"./.prettierrc.yml\" --write \"**/*.{json,md,sol,yml}\"",
+    "prettier:check": "prettier --config \"./.prettierrc.yml\" --check \"**/*.{json,md,sol,yml}\"",
+    "solhint": "solhint --config \"./.solhint.json\" \"{src,test}/**/*.sol\""
+
   },
   "author": "",
   "license": "ISC",
@@ -19,7 +26,6 @@
   },
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.15",
-    "@typechain/truffle-v5": "^5.1.0",
     "@types/chai": "^4.2.22",
     "@types/mocha": "^9.0.0",
     "@types/node": "^16.11.2",
@@ -27,7 +33,10 @@
     "eth-gas-reporter": "^0.2.23",
     "prettier": "^2.6.2",
     "prettier-plugin-solidity": "^1.0.0-beta.19",
-    "truffle": "^5.1.65",
+    "cz-conventional-changelog": "^3.3.0",
+    "@commitlint/cli": "^17.0.3",
+    "@commitlint/config-conventional": "^17.0.3",
+    "commitizen": "^4.2.4",
     "truffle-hdwallet-provider": "^1.0.6",
     "truffle-plugin-verify": "^0.5.24",
     "ts-node": "^10.3.0",
