@@ -14,6 +14,7 @@
     "typeRoots": ["./node_modules/@types", "./types"],
     "types": ["@types/node", "@types/chai", "@types/mocha"]
   },
-  "include": ["**/*.ts", "test/mockGovernance.js"],
+  "include": ["**/*.ts", "./scripts", "./test", "./typechain-types"],
+  "files": ["./hardhat.config.ts"],
   "exclude": ["node_modules", "example", "build"]
 }

@@ -17,12 +17,10 @@ pragma solidity ^0.8.17;
 import "@debond-protocol/debond-token-contracts/DBIT.sol";
 
 contract DBITTest is DBIT {
-
     constructor(
         address governanceAddress,
         address bankAddress,
         address airdropAddress
     ) DBIT(governanceAddress, bankAddress, airdropAddress) {}
-
 
 }
