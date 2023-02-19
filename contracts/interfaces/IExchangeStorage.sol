@@ -14,7 +14,7 @@
 
 pragma solidity ^0.8.17;
 
-import "erc3475/IERC3475.sol";
+import "./IERC3475.sol";
 
 interface IExchangeStorage {
 
@@ -75,9 +75,7 @@ interface IExchangeStorage {
 
     function cancelAuction(uint auctionId, uint endingTime) external;
 
-    function getAuction(uint auctionId) external view returns (AuctionParam memory auction);
-
-    function getERC3475Product(uint auctionId) external view returns(ERC3475Product memory);
+    function getAuction(uint auctionId) external view returns (Auction memory auction);
 
     function getMinAuctionDuration() external view returns(uint);
 
