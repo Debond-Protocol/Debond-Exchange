@@ -16,7 +16,7 @@ pragma solidity ^0.8.17;
 
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "erc3475/IERC3475.sol";
+import "./interfaces/IERC3475.sol";
 import "./interfaces/IExchangeStorage.sol";
 
 contract ExchangeStorage is IExchangeStorage  {
@@ -74,27 +74,25 @@ contract ExchangeStorage is IExchangeStorage  {
         uint256 maxCurrencyAmount,
         uint256 minCurrencyAmount
     ) external onlyExchange {
-        Auction storage auction = _auctions[idCounter._value];
-        AuctionParam storage auctionParam = auction.auctionParam;
-        auction.id = idCounter._value;
-        auctionParam.startingTime = startingTime;
-        auctionParam.owner = owner;
-        auctionParam.erc20Currency = erc20CurrencyAddress;
-        auctionParam.minCurrencyAmount = minCurrencyAmount;
-        auctionParam.maxCurrencyAmount = maxCurrencyAmount;
-        auctionParam.duration = duration;
-        auctionParam.auctionState = AuctionState.Started;
+
+        _auctions[idCounter._value].id = idCounter._value;
+        _auctions[idCounter._value].auctionParam.startingTime = startingTime;
+        _auctions[idCounter._value].auctionParam.owner = owner;
+        _auctions[idCounter._value].auctionParam.erc20Currency = erc20CurrencyAddress;
+        _auctions[idCounter._value].auctionParam.minCurrencyAmount = minCurrencyAmount;
+        _auctions[idCounter._value].auctionParam.maxCurrencyAmount = maxCurrencyAmount;
+        _auctions[idCounter._value].auctionParam.duration = duration;
+        _auctions[idCounter._value].auctionParam.auctionState = AuctionState.Started;
         // increment the id
         idCounter.increment();
     }
 
     function setProduct(uint _auctionId, ERC3475Product memory _product) external onlyExchange {
-        Auction storage auction = _auctions[_auctionId];
-        ERC3475Product storage product = auction.product;
-        product.ERC3475Address = _product.ERC3475Address;
+
         for (uint i; i < _product.transactions.length; i++) {
-            product.transactions.push(_product.transactions[i]);
+            _auctions[_auctionId].product.transactions.push(_product.transactions[i]);
         }
+        _auctions[_auctionId].product.ERC3475Address = _product.ERC3475Address;
     }
 
     function completeAuction(uint auctionId, address successfulBidder, uint endingTime, uint finalPrice) external onlyExchange {
@@ -124,12 +122,8 @@ contract ExchangeStorage is IExchangeStorage  {
 
     }
 
-    function getAuction(uint auctionId) external view returns (AuctionParam memory auction) {
-        return _auctions[auctionId].auctionParam;
-    }
-
-    function getERC3475Product(uint auctionId) external view returns(ERC3475Product memory) {
-        return _auctions[auctionId].product;
+    function getAuction(uint auctionId) external view returns (Auction memory auction) {
+        return _auctions[auctionId];
     }
 
     function getMinAuctionDuration() external view returns(uint) {
