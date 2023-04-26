@@ -151,7 +151,6 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             address(this),
             finalPrice
         );
-        exchangeStorage.completeERC3475Send(_auctionId);
 
         emit AuctionCompleted(_auctionId, _bidder);
     }
