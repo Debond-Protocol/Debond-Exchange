@@ -22,6 +22,7 @@ interface IExchangeStorage {
     enum AuctionState {
         Started,
         Completed,
+        Settled,
         Cancelled
     }
 
