@@ -241,6 +241,50 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
 
         emit AuctionCancelled(_auctionId, msg.sender, cancellationTime);
     }
+    
+    function cancelAuctionAfterBid(uint256 _auctionId)
+    external
+    {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+        .getAuction(_auctionId).auctionParam;
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Completed,
+            "auction not completed"
+        );
+
+        uint256 cancellationTime = block.timestamp;
+        exchangeStorage.cancelAuction(_auctionId, cancellationTime);
+
+        // sending back the bonds to the owner
+        exchangeStorage.cancelERC3475Send(_auctionId);
+
+        IERC20(auction.erc20Currency).safeTransfer(
+            auction.successfulBidder,
+            auction.finalPrice
+        );
+
+        emit AuctionCancelled(_auctionId, msg.sender, cancellationTime);
+    }
+
+    function cancelAuctionAfterBidWithFiat(uint256 _auctionId)
+    external
+    {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+        .getAuction(_auctionId).auctionParam;
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Completed,
+            "auction not completed"
+        );
+
+        uint256 cancellationTime = block.timestamp;
+        exchangeStorage.cancelAuction(_auctionId, cancellationTime);
+
+        // sending back the bonds to the owner
+        exchangeStorage.cancelERC3475Send(_auctionId);
+
+        emit AuctionCancelled(_auctionId, msg.sender, cancellationTime);
+    }
+
 
     function currentPrice(uint256 _auctionId)
     public
