@@ -148,7 +148,7 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
 
         IERC20(auction.erc20Currency).safeTransferFrom(
             msg.sender,
-            auction.owner,
+            address(this),
             finalPrice
         );
         exchangeStorage.completeERC3475Send(_auctionId);
@@ -189,13 +189,6 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             finalPrice
         );
 
-        IERC20(auction.erc20Currency).safeTransferFrom(
-            msg.sender,
-            auction.owner,
-            finalPrice
-        );
-        exchangeStorage.completeERC3475Send(_auctionId);
-
         emit AuctionCompleted(_auctionId, _bidder);
     }
     function settlement(uint256 _auctionId) external nonReentrant {
@@ -207,8 +200,7 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             "bid is not completed already"
         );
 
-        IERC20(auction.erc20Currency).safeTransferFrom(
-            exchangeStorageAddress,
+        IERC20(auction.erc20Currency).safeTransfer(
             auction.owner,
             auction.finalPrice
         );
