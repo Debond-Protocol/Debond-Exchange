@@ -35,6 +35,7 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
     event AuctionStarted(uint256 _auctionId, address issuer);
     event AuctionCancelled(uint256 _auctionId, address issuer, uint256 time);
     event AuctionCompleted(uint256 _auctionId, address BidWinner);
+    event AuctionSettled(uint256 _auctionId, address BidWinner);
     event BidSubmitted(address indexed sender, uint256 amount);
 
     constructor(
@@ -116,7 +117,7 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
     * @notice bid the auction, the first bidder gets the Assets
     * @param _auctionId Id of the auction requested
     */
-    function bid(uint256 _auctionId) external nonReentrant {
+    function bid(address _bidder, uint256 _auctionId) external nonReentrant {
         IExchangeStorage.AuctionParam memory auction = exchangeStorage
             .getAuction(_auctionId).auctionParam;
         require(
@@ -135,7 +136,7 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
             auction.auctionState == IExchangeStorage.AuctionState.Started,
             "bid is completed already"
         );
-        address bidder = msg.sender;
+        address bidder = _bidder;
         uint256 finalPrice = currentPrice(_auctionId);
 
         exchangeStorage.completeAuction(
@@ -152,7 +153,82 @@ contract Exchange is ExecutableOwnable, AccessControl, ReentrancyGuard {
         );
         exchangeStorage.completeERC3475Send(_auctionId);
 
-        emit AuctionCompleted(_auctionId, bidder);
+        emit AuctionCompleted(_auctionId, _bidder);
+    }
+
+    /**
+    * @notice bid the auction, the first bidder gets the Assets
+    * @param _auctionId Id of the auction requested
+    */
+    function bidWithFiat(address _bidder, uint256 _auctionId) external nonReentrant {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId).auctionParam;
+        require(
+            auction.startingTime != 0,
+            "Exchange: Auction id given not found"
+        );
+        require(
+            msg.sender != auction.owner,
+            "Exchange: bidder should not be the auction owner"
+        );
+        require(
+            block.timestamp <= auction.startingTime + auction.duration,
+            "Exchange: Auction Expired"
+        );
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Started,
+            "bid is completed already"
+        );
+        address bidder = _bidder;
+        uint256 finalPrice = currentPrice(_auctionId);
+
+        exchangeStorage.completeAuction(
+            _auctionId,
+            bidder,
+            block.timestamp,
+            finalPrice
+        );
+
+        IERC20(auction.erc20Currency).safeTransferFrom(
+            msg.sender,
+            auction.owner,
+            finalPrice
+        );
+        exchangeStorage.completeERC3475Send(_auctionId);
+
+        emit AuctionCompleted(_auctionId, _bidder);
+    }
+    function settlement(uint256 _auctionId) external nonReentrant {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId).auctionParam;
+       
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Completed,
+            "bid is not completed already"
+        );
+
+        IERC20(auction.erc20Currency).safeTransferFrom(
+            exchangeStorageAddress,
+            auction.owner,
+            auction.finalPrice
+        );
+        exchangeStorage.completeERC3475Send(_auctionId);
+
+        emit AuctionSettled(_auctionId, auction.successfulBidder);
+    }
+
+    function settlementWithFiat(uint256 _auctionId) external nonReentrant {
+        IExchangeStorage.AuctionParam memory auction = exchangeStorage
+            .getAuction(_auctionId).auctionParam;
+       
+        require(
+            auction.auctionState == IExchangeStorage.AuctionState.Completed,
+            "bid is not completed already"
+        );
+
+        exchangeStorage.completeERC3475Send(_auctionId);
+
+        emit AuctionSettled(_auctionId, auction.successfulBidder);
     }
 
     function cancelAuction(uint256 _auctionId)
